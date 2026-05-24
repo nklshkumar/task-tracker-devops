@@ -1,0 +1,61 @@
+name: Task Tracker CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install Dependencies
+      run: |
+        cd app
+        pip install -r requirements.txt
+
+    - name: Run Tests
+      run: |
+        cd app
+        pytest
+
+    - name: Login to GHCR
+      run: |
+        echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Build Docker Image
+      run: |
+        docker build \
+        -t ghcr.io/${{ github.repository_owner }}/task-tracker-api:latest \
+        -f docker/Dockerfile .
+
+    - name: Push Docker Image
+      run: |
+        docker push ghcr.io/${{ github.repository_owner }}/task-tracker-api:latest
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker pull ghcr.io/${{ github.repository_owner }}/task-tracker-api:latest
+
+          docker stop task-api || true
+          docker rm task-api || true
+
+          docker run -d \
+            --name task-api \
+            -p 3000:3000 \
+            ghcr.io/${{ github.repository_owner }}/task-tracker-api:latest
