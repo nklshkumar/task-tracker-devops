@@ -1,0 +1,48 @@
+---
+- hosts: web
+  become: yes
+
+  tasks:
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Create monitoring directory
+      file:
+        path: /home/ubuntu/monitoring
+        state: directory
+
+    - name: Copy docker-compose.yml
+      copy:
+        src: ../monitoring/docker-compose.yml
+        dest: /home/ubuntu/monitoring/docker-compose.yml
+
+    - name: Copy prometheus.yml
+      copy:
+        src: ../monitoring/prometheus.yml
+        dest: /home/ubuntu/monitoring/prometheus.yml
+
+    - name: Start monitoring stack
+      shell: docker-compose up -d
+      args:
+        chdir: /home/ubuntu/monitoring

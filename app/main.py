@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 import models
 import schemas
 from database import SessionLocal, engine
@@ -8,6 +10,7 @@ from database import SessionLocal, engine
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Task Tracker API")
+Instrumentator().instrument(app).expose(app)
 
 # Dependency
 def get_db():

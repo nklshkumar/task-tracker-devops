@@ -19,6 +19,18 @@ resource "aws_security_group" "task_tracker_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+  from_port   = 3001
+  to_port     = 3001
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+ingress {
+  from_port   = 9090
+  to_port     = 9090
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
   egress {
     to_port     = 0
     from_port   = 0
